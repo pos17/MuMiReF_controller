@@ -1,0 +1,11 @@
+name: MuMiReF_controller
+channels:
+  - defaults  # prefer installing packages from conda-main over conda-forge, will install Intel MKL for numpy)
+  - conda-forge  # preferring conda-forge would install OpenBLAS for numpy
+dependencies:
+  - pip
+  - pyyaml
+  - pip:
+    - python-osc
+    - customtkinter
+    - packaging
