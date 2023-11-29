@@ -5,6 +5,7 @@ channels:
 dependencies:
   - pip
   - pyyaml
+  - numpy
   - pip:
     - python-osc
     - customtkinter
