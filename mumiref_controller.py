@@ -106,26 +106,33 @@ class BinResColumn(customtkinter.CTkFrame):
         self.configure(fg_color=("gray78", "gray28"))  # set frame color
 
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(3, weight=1)
+        self.grid_rowconfigure(5, weight=1)
         self.title_label = customtkinter.CTkLabel(self, text=title, font=customtkinter.CTkFont(size=16, weight="bold"))
         self.title_label.grid(row=0, column=0, padx=20, pady=20,sticky="ew",columnspan=3)
         
+        self.pan_label = customtkinter.CTkLabel(self, text=0, font=customtkinter.CTkFont(size=16, weight="bold"))
+        self.pan_label.grid(row=1, column=0, padx=5, pady=5,sticky="ew",columnspan=3)
+        
+        self.pan_slider = customtkinter.CTkSlider(self, orientation="horizontal", command=self.pan_slider_event)
+        self.pan_slider.grid(row=2, column=0, rowspan=1,columnspan=2, padx=(10, 0), pady=(10, 10), sticky="ns")
+        self.pan_slider.set(np.interp(0.5,[-180,180],[0,1]))
+        self.pan_label.configure(text=round(np.interp(0.5,[0,1],[-180,180]),1))
         self._listen = False
         self.listen_button = customtkinter.CTkButton(self, fg_color="transparent", border_width=2, text_color=("gray10", "#DCE4EE"),text="listen",command=self.listen_button_callback)
-        self.listen_button.grid(row=1, column=0, padx=(5, 5), pady=(5, 5), sticky="nsew",columnspan=3)
+        self.listen_button.grid(row=3, column=0, padx=(5, 5), pady=(5, 5), sticky="nsew",columnspan=3)
         
         self._mute = False
         self.mute_button = customtkinter.CTkButton(self, fg_color="transparent", border_width=2, text_color=("red"),text="MUTE",command=self.toggle_mute)
-        self.mute_button.grid(row=2, column=0, padx=(5, 5), pady=(5, 5), sticky="nsew",columnspan=3)
+        self.mute_button.grid(row=4, column=0, padx=(5, 5), pady=(5, 5), sticky="nsew",columnspan=3)
         
         self.slider = customtkinter.CTkSlider(self, orientation="vertical", command=self.slider_event)
-        self.slider.grid(row=3, column=0, rowspan=5,columnspan=1, padx=(10, 0), pady=(10, 10), sticky="ns")
+        self.slider.grid(row=5, column=0, rowspan=5,columnspan=1, padx=(10, 0), pady=(10, 10), sticky="ns")
         self.slider.set(np.interp(0,[-200,0],[0,1]))
         self.level_meter_L = customtkinter.CTkProgressBar(self, orientation="vertical", progress_color="green")
-        self.level_meter_L.grid(row=3, column=1, rowspan=5, padx=(10, 10), pady=(10, 10), sticky="ns")
+        self.level_meter_L.grid(row=5, column=1, rowspan=5, padx=(10, 10), pady=(10, 10), sticky="ns")
         self.level_meter_L.set(0)
         self.level_meter_R = customtkinter.CTkProgressBar(self, orientation="vertical", progress_color="green")
-        self.level_meter_R.grid(row=3, column=2, rowspan=5, padx=(10, 10), pady=(10, 10), sticky="ns")
+        self.level_meter_R.grid(row=5, column=2, rowspan=5, padx=(10, 10), pady=(10, 10), sticky="ns")
         self.level_meter_R.set(0)
 
     def set_listen(self,is_listen):
@@ -176,6 +183,21 @@ class BinResColumn(customtkinter.CTkFrame):
         except ValueError:
             return
 
+    def pan_slider_event(self,value):
+        level_to_send = np.interp(value,[0,1],[-180,180])
+
+        self.pan_label.configure(text=round(level_to_send,1))
+        #print(value)
+        if self.command is not None:
+            self.command()
+        try:
+            message = "/" + self.name + "tracker/azimuth"
+            print(message)
+            self.client.send_message(message,level_to_send)
+            #print("listen button index: {0}".format(self.index))
+
+        except ValueError:
+            return
 
 
     def handle_osc_level(self,level_db_L, level_db_R):
@@ -328,7 +350,7 @@ class App(customtkinter.CTk):
 
 
 if __name__ == "__main__":
-    with open('./config_spatial_mic_renderer_5_2.yml', 'r') as file:
+    with open('./config_spatial_mic_renderer_1_6.yml', 'r') as file:
         mics_config = yaml.safe_load(file) 
     renderers_num = mics_config["clients_num"]
     microphones = mics_config["microphones"]
