@@ -127,7 +127,7 @@ class BinResColumn(customtkinter.CTkFrame):
         
         self.slider = customtkinter.CTkSlider(self, orientation="vertical", command=self.slider_event)
         self.slider.grid(row=5, column=0, rowspan=5,columnspan=1, padx=(10, 0), pady=(10, 10), sticky="ns")
-        self.slider.set(np.interp(0,[-200,0],[0,1]))
+        self.slider.set(np.interp(0,[-60,+20],[0,1]))
         self.level_meter_L = customtkinter.CTkProgressBar(self, orientation="vertical", progress_color="green")
         self.level_meter_L.grid(row=5, column=1, rowspan=5, padx=(10, 10), pady=(10, 10), sticky="ns")
         self.level_meter_L.set(0)
@@ -164,13 +164,13 @@ class BinResColumn(customtkinter.CTkFrame):
             return
 
     def print_level_db_st(self,level_db_L,level_db_R):
-        level_to_print_L = np.interp(level_db_L,[-200,+10],[0,1])
-        level_to_print_R = np.interp(level_db_R,[-200,+10],[0,1])
+        level_to_print_L = np.interp(level_db_L,[-60,+20],[0,1])
+        level_to_print_R = np.interp(level_db_R,[-60,+20],[0,1])
         self.level_meter_L.set(level_to_print_L)
         self.level_meter_R.set(level_to_print_R)
 
     def slider_event(self,value):
-        level_to_send = np.interp(value,[0,1],[-200,00])
+        level_to_send = np.interp(value,[0,1],[-60,+10])
         #print(value)
         if self.command is not None:
             self.command()
