@@ -100,6 +100,7 @@ class BinResColumn(customtkinter.CTkFrame):
         self.level_R = -60
         self.level_changed = False
         self.level_lock = threading.Lock()
+        self.tracker_lock = threading.Lock()
         self.command = command
         self.client = my_client
         self.index = index
@@ -162,6 +163,7 @@ class BinResColumn(customtkinter.CTkFrame):
         try:
             self.client.send_message("/monitoring/monitor_num",self.index)
             print("listen button index: {0}".format(self.index))
+
 
         except ValueError:
             return
@@ -257,25 +259,40 @@ class App(customtkinter.CTk):
         self.clients_frame.grid_rowconfigure(1, weight=1)
         self.bin_ren_cols = []
         
+        
         self.OSC_client = my_client
-        self.dispatcher = self.setup_osc_server("127.0.0.1",5005)
+        self.dispatcher = self.setup_osc_server("127.0.0.1",7000)
         for i in range(len(bin_renderers)):
             bin_ren_col = BinResColumn(self.clients_frame,title=bin_renderers[i]["name"],my_client=my_client,index=i)
             bin_ren_col.grid(row=1, column=i, padx=(2, 2), pady=(0, 0), sticky="nsew")
             message = "/"+ bin_renderers[i]["name"] + "renderer/peak"
             print(message)
             self.dispatcher.map(message,bin_ren_col.set_levels_db_st,i)
-           
+
             message = "/monitoring/listen"
             self.dispatcher.map(message,self.listen_feedback)
             self.bin_ren_cols.append(bin_ren_col)
-
+        self.selected_name= self.bin_ren_cols[0].name
+        print(self.bin_ren_cols[0].name)
         self.dispatcher.map("/load",self.write_cpu_load)
         self.dispatcher.map("/monitoring/peak",self.monitor_column.print_level_db_st)
+        self.dispatcher.map("/yaw",self.handle_ypr)
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.start_action()
 
+    def handle_ypr(self,unused_addr,y):
+        print("Y:" + str(y))
+        try:
+            #message = "/" + self.name + "tracker/azimuth"
+            message = "/" + self.selected_name + "tracker/azimuth"
 
+            level_to_send = np.interp(y,[0,1],[-180,180])
+            self.OSC_client.send_message(message,level_to_send)
+            #print("listen button index: {0}".format(self.index))
+
+        except ValueError:
+            return
+        
 
     def write_cpu_load(self,unused_addr,cpu_load):
         self.total_cpu_load_lock.acquire()
@@ -285,6 +302,7 @@ class App(customtkinter.CTk):
         for i in range(len(self.bin_ren_cols)):
             self.bin_ren_cols[i].set_listen(False)
         self.bin_ren_cols[listened_index].set_listen(True)
+        self.selected_name = self.bin_ren_cols[listened_index].name
 
 
     def sidebar_button_event(self):
@@ -303,7 +321,7 @@ class App(customtkinter.CTk):
     def init_main(self):
         # start dispatcher,server
         ip = "127.0.0.1"
-        port = 5005
+        port = 7000
         self.server = ThreadingOSCUDPServer((ip, port), self.dispatcher)
         self.server.serve_forever()  # Blocks forever
         
@@ -339,7 +357,7 @@ class App(customtkinter.CTk):
 
 
 if __name__ == "__main__":
-    with open('./config_spatial_mic_renderer_1_6.yml', 'r') as file:
+    with open('./config_spatial_mic_renderer_4_test_perc.yml', 'r') as file:
         mics_config = yaml.safe_load(file) 
     renderers_num = mics_config["clients_num"]
     microphones = mics_config["microphones"]
